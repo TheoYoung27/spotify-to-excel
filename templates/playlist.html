@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/playlist.css') }}">
+    <meta charset="UTF-8">
+    <title>{{ playlist['name'] }}</title>
+</head>
+<body>
+<h1>
+    <a class="button" href="/index">Back</a>
+    {{ playlist['name'] }}
+    <a id="logout" class="logoutButton" href="/logout">Logout</a>
+</h1>
+<h2 id="songRange">Songs 1 - 20</h2>
+<div class="list">
+    {% for x in range(4) %}
+        <ul id="list{{ x }}">
+            {% for y in range(5) %}
+                {% if y+x*5 < data[1]|length %}
+                    <li class="button" id="element_{{ y+x*5 }}">
+                        <img src="{{ data[1][y+x*5].image }}" width="30" height="30" alt="{{ data[1][y+x*5].artist + " - " + data[1][y+x*5].name }}">
+                        <p>
+                            {{ data[1][y+x*5].artist + " - " + data[1][y+x*5].name }}
+                            {% if data[1][y+x*5].explicit %}
+                                 - Explicit!
+                            {% endif %}
+                        </p>
+                        <input class="checkbox" type="checkbox" id="checkbox_{{ y+x*5 }}" checked="checked" onclick="toggle('{{ data[1][y+x*5].id }}')">
+                    </li>
+                {% else %}
+                    <li class="button" id="element_{{ y+x*5 }}" style="display: none">
+                        <img width="30" height="30" alt="image {{ y+x*5 }}">
+                        <p>
+                        </p>
+                        <input class="checkbox" type="checkbox" id="checkbox_{{ y+x*5 }}" checked="checked">
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% endfor %}
+</div>
+<div class="prevNextContainer">
+<a class="prevNextButton" id="prevLink" onclick="displayPrevPage()" style="background: #494949">Prev</a>
+<a class="prevNextButton" id="nextLink" onclick="displayNextPage()">Next</a>
+</div>
+<div class="logbookContainer">
+    Logbook
+    <select name="logbook" id="logbookSelect">
+        <option value="tester" selected="selected">tester</option>
+        <option value="WNYO Song Submission Logbook 2023-24">WNYO Song Submission Logbook 2023-24</option>
+        <option value="WNYO Song Submission Logbook 2024-25">WNYO Song Submission Logbook 2024-25</option>
+    </select>
+    <button id="addToLogbookButton" onclick="addToLogbook()">Add to logbook</button>
+</div>
+<div class="downloadContainer">
+Folder Name
+<input type="text" id="folder_name_input" maxlength="25">
+<button id="downloadAndRename" onclick="downloadYoutubeLinks()">Download MP3s and Upload to Drive</button>
+</div>
+<script>
+    let playlist_name = "{{ playlist['name'] }}";
+    let playlistId = "{{ playlist['id'] }}";
+    let trackset = [];
+    let page = 0;
+    {% for track in data[1] %}
+        trackset.push({
+            "name": "{{ track.name }}",
+            "artist": "{{ track.artist }}",
+            "artist_id": "{{ track.artist_id }}",
+            "album": "{{ track.album }}",
+            "album_id": "{{ track.album_id }}",
+            "duration": "{{ track.duration }}",
+            "year": "{{ track.year }}",
+            "id": "{{ track.id }}",
+            "to_add": "{{ track.to_add }}",
+            "explicit": "{{ track.explicit }}",
+            "image": "{{ track.image }}",
+            "genre": "{{ track.genre }}",
+            "mood": "{{ track.mood }}",
+            "label": "{{ track.label }}"
+        });
+    {% endfor %}
+    let liItems = document.querySelectorAll('.button');
+    liItems.forEach(function(li) {
+        li.addEventListener('click', function() {
+            let checkbox = this.querySelector('.checkbox');
+            checkbox.checked = !checkbox.checked;
+            toggle(checkbox.id.split('_')[1]);
+        });
+    });
+    function post(endpoint, body){
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                body
+            })
+        })
+            .then(response => {
+                if(!response.ok){
+                    throw new Error('Error encountered')
+                }
+                return response.json();
+            })
+            .then(data =>{
+            })
+            .catch(error =>{
+                console.error(error)
+            })
+    }
+    function toggle(id){
+        var track = trackset[id];
+        if(track.to_add === "True"){
+            track.to_add = "False";
+        }
+        else {
+            track.to_add = "True";
+        }
+    }
+
+    function addToLogbook(){
+        let body = [trackset, document.getElementById("logbookSelect").value]
+        post('/edit-sheets', body)
+    }
+
+    function downloadYoutubeLinks(){
+        let folder_name = document.getElementById("folder_name_input").value;
+        folder_name = folder_name.trim();
+        let body = [folder_name, playlist_name, trackset];
+        post('/downloads', body);
+
+    }
+
+    let data = {{ data|tojson }}
+    let prevData = null;
+    let nextData = null;
+    let nextLink = document.getElementById("nextLink");
+    let prevLink = document.getElementById("prevLink");
+
+    function preloadPrevPage(){
+        let calledPage = page;
+        if(prevData != null){
+            return;
+        }
+        if(page > 0 && prevData == null){
+            const prevLink = document.getElementById("prevLink");
+            const endpoint = "/additional-playlist?id=" + playlistId + "&page=" + (page - 1);
+            prevLink.style.pointerEvents = "none";
+            prevLink.style.background = "#494949";
+            fetch(endpoint)
+                .then(response => {
+                    return response.json();
+                })
+                .then(data => {
+                    if(calledPage !== page){
+                        return;
+                    }
+                    prevData = [data[0], []];
+                    for (let i = 0; i < data[1].length; i++){
+                        prevData[1].push({
+                            "name": data[1][i]['name'],
+                            "artist": data[1][i]['artist'],
+                            "artist_id": data[1][i]['artist_id'],
+                            "album": data[1][i]['album'],
+                            "album_id": data[1][i]['album_id'],
+                            "duration": data[1][i]['duration'],
+                            "year": data[1][i]['year'],
+                            "id": data[1][i]['id'],
+                            "to_add": data[1][i]['to_add'],
+                            "explicit": data[1][i]['explicit'],
+                            "image": data[1][i]['image'],
+                            "genre": data[1][i]['genre'],
+                            "mood": data[1][i]['mood'],
+                            "label": data[1][i]['label']
+                        });
+                    }
+                    prevLink.style.pointerEvents = "auto";
+                    prevLink.style.background = "black";
+                })
+        }
+    }
+
+    function preloadNextPage(){
+        let calledPage = page;
+        if(nextData != null){
+            return;
+        }
+        if((page + 1) * 20 < {{ playlist['tracks']['total']|int }} && nextData == null){
+            const nextLink = document.getElementById("nextLink");
+            const endpoint = "/additional-playlist?id=" + playlistId + "&page=" + (page + 1);
+            nextLink.style.pointerEvents = "none";
+            nextLink.style.background = "#494949";
+            fetch(endpoint)
+                .then(response => {
+                    return response.json();
+                })
+                .then(data => {
+                    if(calledPage !== page){
+                        return;
+                    }
+                    nextData = [data[0], []];
+                    for (let i = 0; i < data[1].length; i++){
+                        nextData[1].push({
+                            "name": data[1][i]['name'],
+                            "artist": data[1][i]['artist'],
+                            "artist_id": data[1][i]['artist_id'],
+                            "album": data[1][i]['album'],
+                            "album_id": data[1][i]['album_id'],
+                            "duration": data[1][i]['duration'],
+                            "year": data[1][i]['year'],
+                            "id": data[1][i]['id'],
+                            "to_add": data[1][i]['to_add'],
+                            "explicit": data[1][i]['explicit'],
+                            "image": data[1][i]['image'],
+                            "genre": data[1][i]['genre'],
+                            "mood": data[1][i]['mood'],
+                            "label": data[1][i]['label']
+                        });
+                    }
+                    nextLink.style.pointerEvents = "auto";
+                    nextLink.style.background = "black";
+                })
+        }
+    }
+
+    function displayPrevPage(){
+        page = Number(prevData[0]);
+        document.getElementById("songRange").innerText =
+            "Playlists " + (page * 20 + 1) + " - " + (page + 1) * 20;
+        for(let i = 0; i < 4; i++){
+            for(let j = 0; j < 5; j++){
+                let index = j + i * 5;
+                let li = document.getElementById("element_" + index);
+                if(prevData[1][index]) {
+                    li.children[0].style.cursor = "pointer";
+                    li.children[0].setAttribute("src", prevData[1][index]['image']);
+                    li.children[0].setAttribute("alt", "song " + index);
+                    prevData[1][index]['explicit'] ?
+                        li.children[1].innerText = prevData[1][index]['artist'] + " - " + prevData[1][index]['name'] + " - Explicit!" :
+                        li.children[1].innerText = prevData[1][index]['artist'] + " - " + prevData[1][index]['name'];
+                    li.children[2].setAttribute("onclick", "toggle(" + prevData[1][index]['id'] + ")")
+                    li.style.display = "flex";
+                }
+                else {
+                    li.style.display = "none";
+                }
+            }
+        }
+        nextData = data;
+        data = prevData;
+        prevData = null;
+        prevLink.style.pointerEvents = "none";
+        prevLink.style.background = "#494949";
+        nextLink.style.pointerEvents = "auto";
+        nextLink.style.background = "black";
+        preloadNextPage();
+        preloadPrevPage();
+    }
+
+    function displayNextPage(){
+        page = Number(nextData[0]);
+        document.getElementById("songRange").innerText =
+            "Playlists " + (page * 20 + 1) + " - " + (page + 1) * 20;
+        for(let i = 0; i < 4; i++){
+            for(let j = 0; j < 5; j++){
+                let index = j + i * 5;
+                let li = document.getElementById("element_" + index);
+                if(nextData[1][index]) {
+                    li.children[0].style.cursor = "pointer";
+                    li.children[0].setAttribute("src", nextData[1][index]['image']);
+                    li.children[0].setAttribute("alt", "song " + index);
+                    nextData[1][index]['explicit'] ?
+                        li.children[1].innerText = nextData[1][index]['artist'] + " - " + nextData[1][index]['name'] + " - Explicit!":
+                        li.children[1].innerText = nextData[1][index]['artist'] + " - " + nextData[1][index]['name'];
+                    li.children[2].setAttribute("onclick", "toggle(" + nextData[1][index]['id'] + ")")
+                    li.style.display = "flex";
+                }
+                else {
+                    li.style.display = "none";
+                }
+            }
+        }
+        prevData = data;
+        data = nextData;
+        nextData = null;
+        nextLink.style.pointerEvents = "none";
+        nextLink.style.background = "#494949";
+        prevLink.style.pointerEvents = "auto";
+        prevLink.style.background = "black";
+        preloadNextPage();
+        preloadPrevPage();
+    }
+
+    window.onload = function() {
+        preloadNextPage();
+    }
+</script>
+</body>
+</html>

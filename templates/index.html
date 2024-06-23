@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/index.css') }}">
+    <meta charset="UTF-8">
+    <title id="title">{{ user_name }} - Home</title>
+</head>
+<body>
+<h1
+    id="h1">{{ user_name }}
+    <a id="logout" class="logoutButton" href="/logout">Logout</a>
+</h1>
+<h2 id="playlistRange">Playlists: 1 - 20</h2>
+<div class="list" id="lists">
+    {% for x in range(4) %}
+        <ul id="list{{ x }}">
+            {% for y in range(5) %}
+                {% if y+x*5 < data[1]['items']|length %}
+                    <li class="button" id="element_{{ y+x*5 }}">
+                        <a id="element_{{ y+x*5 }}_href" href="/playlist?id={{ data[1]['items'][y+x*5]['id'] }}">
+                            <img id="element_{{ y+x*5 }}_img" src="{{ data[1]['items'][y+x*5]['images'][0]['url'] }}" alt="playlist image {{ y+x*5 }}" width="25" height="25">
+                            <p id="element_{{ y+x*5 }}_name">
+                                {{ data[1]['items'][y+x*5]['name'] }}
+                            </p>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="button" id="element_{{ y+x*5 }}" style="display: none">
+                        <a id="element_{{ y+x*5 }}_href">
+                            <img id="element_{{ y+x*5 }}_img" alt="playlist image {{ y+x*5 }}" width="25" height="25">
+                            <p id="element_{{ y+x*5 }}_name">
+                            </p>
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% endfor %}
+</div>
+<div class="prevNextContainer">
+    <a id="prevLink" class="prevNextButton" onclick="displayPrevPage()" style="background: #494949">Prev</a>
+    <a id="nextLink" class="prevNextButton" onclick="displayNextPage()">Next</a>
+</div>
+<script>
+    let page = 0;
+    let data = {{ data|tojson }}
+    let prevData = null;
+    let nextData = null;
+    let nextLink = document.getElementById("nextLink");
+    let prevLink = document.getElementById("prevLink");
+
+    function preloadPrevPage(){
+        let calledPage = page;
+        if(prevData != null){
+            return;
+        }
+        if(page > 0){
+            const prevLink = document.getElementById("prevLink");
+            const endpoint = "/additional-playlists?page=" + (page - 1);
+            prevLink.style.pointerEvents = "none";
+            prevLink.style.background = "#494949";
+            fetch(endpoint)
+                .then(response => {
+                    return response.json();
+                })
+                .then(data => {
+                    if (calledPage !== page){
+                        return;
+                    }
+                    prevData = data;
+                    prevLink.style.pointerEvents = "auto";
+                    prevLink.style.background = "black";
+                })
+        }
+     }
+
+    function preloadNextPage(){
+        let calledPage = page;
+        if(nextData != null){
+            return;
+        }
+        if((page + 1) * 20 < {{ data[1]['total']|int }}){
+            const nextLink = document.getElementById("nextLink");
+            const endpoint = "additional-playlists?page=" + (page + 1);
+            nextLink.style.pointerEvents = "none";
+            nextLink.style.background = "#494949";
+            fetch(endpoint)
+                .then(response => {
+                    return response.json();
+                })
+                .then(data => {
+                    if(calledPage !== page){
+                        return;
+                    }
+                    nextData = data;
+                    nextLink.style.pointerEvents = "auto";
+                    nextLink.style.background = "black";
+                })
+        }
+     }
+
+    function displayPrevPage(){
+        page = prevData[0];
+        document.getElementById("playlistRange").innerText =
+            "Playlists " + (Number(prevData[0])*20 + 1) + " - " + (Number(prevData[0])+1)*20;
+        for(let i = 0; i < 4; i++){
+            for(let j = 0; j < 5; j++){
+                let index = j + i * 5;
+                let li = document.getElementById("element_" + index);
+                if(prevData[1]['items'][index]) {
+                    li.children[0].setAttribute("href", "/playlist?id=" + prevData[1]['items'][index]['id']);
+                    li.children[0].style.cursor = "pointer";
+                    li.children[0].children[0].setAttribute("src", prevData[1]['items'][index]['images'][0]['url']);
+                    li.children[0].children[0].setAttribute("alt", "playlist element " + index);
+                    li.children[0].children[1].innerText = prevData[1]['items'][index]['name'];
+                    li.style.display = "flex";
+                }
+                else {
+                    li.style.display = "none";
+                }
+            }
+        }
+        nextData = data;
+        data = prevData;
+        prevData = null;
+        prevLink.style.pointerEvents = "none";
+        prevLink.style.background = "#494949";
+        nextLink.style.pointerEvents = "auto";
+        nextLink.style.background = "black";
+        preloadPrevPage();
+        preloadNextPage();
+    }
+
+    function displayNextPage(){
+        page = Number(nextData[0]);
+        document.getElementById("playlistRange").innerText =
+            "Playlists " + (Number(nextData[0])*20 + 1) + " - " + (Number(nextData[0])+1)*20;
+        for(let i = 0; i < 4; i++){
+            for(let j = 0; j < 5; j++){
+                let index = j + i * 5;
+                let li = document.getElementById("element_" + index);
+                if(nextData[1]['items'][index]) {
+                    li.children[0].setAttribute("href", "/playlist?id=" + nextData[1]['items'][index]['id']);
+                    li.children[0].style.cursor = "pointer";
+                    li.children[0].children[0].setAttribute("src", nextData[1]['items'][index]['images'][0]['url']);
+                    li.children[0].children[0].setAttribute("alt", "playlist element " + index);
+                    li.children[0].children[1].innerText = nextData[1]['items'][index]['name'];
+                    li.style.display = "flex";
+                }
+                else {
+                    li.style.display = "none";
+                }
+            }
+        }
+        prevData = data;
+        data = nextData;
+        nextData = null;
+        nextLink.style.pointerEvents = "none";
+        nextLink.style.background = "#494949";
+        prevLink.style.pointerEvents = "auto";
+        prevLink.style.background = "black";
+        preloadNextPage();
+        preloadPrevPage();
+    }
+
+    window.onload = function() {
+        preloadNextPage();
+    }
+</script>
+</body>
+</html>

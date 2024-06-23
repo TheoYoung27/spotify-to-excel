@@ -1,0 +1,83 @@
+body {
+    user-select: none;
+    background-color: #969696;
+    color: #004d00;
+}
+a:link {
+    color: #004d00;
+    text-decoration: none;
+}
+a:visited {
+    color: #004d00;
+    text-decoration: none;
+}
+a:hover {
+    color: #004d00;
+    text-decoration: none;
+}
+a:active {
+    color: #004d00;
+    text-decoration: none;
+}
+/*needs work*/
+.checkbox{
+    display: block;
+    cursor: pointer;
+
+}
+.checkbox:hover{
+    cursor: pointer;
+}
+.checkbox input:checked + .checkbox:after{
+    display: block;
+}
+.list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: left;
+}
+.prevNextButton {
+    user-select: none;
+    pointer-events: none;
+    cursor: pointer;
+    display: block;
+    width: fit-content;
+    height: 15px;
+    background: black;
+    padding: 8px;
+    margin: 2px;
+    text-align: center;
+    border-radius: 8px;
+    color: #004d00;
+    font-weight: bold;
+    line-height: 15px;
+}
+.button {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    height: 30px;
+    background: black;
+    padding: 8px;
+    margin: 2px;
+    text-align: center;
+    border-radius: 8px;
+    color: #004d00;
+    font-weight: bold;
+    line-height: 45px;
+}
+.button a {
+    display: flex;
+    align-items: center;
+}
+.button img {
+    margin-right: 5px;
+    vertical-align: -10px;
+}
+.prevNextContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
