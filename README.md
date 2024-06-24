@@ -1,5 +1,5 @@
 This project is a simple webserver on localhost:3000 which takes spotify playlists and attempts to find audio versions of the songs on youtube,
-downlaods them, stores them in a google drive folder, records the song information and appends to a specified google doc spreasheet. It requires logging in to both google and spotify.
+downloads them, stores them in a google drive folder, records the song information and appends to a specified google doc spreasheet. It requires logging in to both google and spotify.
 
 attempting to login to spotify with google causes issues with the cookie storage.
 This was created to make my life easier for uploading songs to SUNY Oswego's radio stations, WNYO, and will likely be of little use to you if you are not using the program to do this.
