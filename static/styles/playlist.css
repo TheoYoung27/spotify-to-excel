@@ -81,3 +81,20 @@ a:active {
     flex-direction: row;
     justify-content: center;
 }
+.logoutButton {
+    font-size: 16px;
+    justify-content: right;
+    margin-left: 70%;
+    user-select: none;
+    display: inline-block;
+    align-items: center;
+    width: fit-content;
+    height: 20px;
+    background: black;
+    padding: 8px;
+    text-align: center;
+    border-radius: 8px;
+    color: #004d00;
+    font-weight: bold;
+    line-height: 20px;
+}

@@ -30,6 +30,7 @@ app.secret_key = 'Sup3rS3cr37k3y'
 spotify_client_id = auth.SPOTIFY_CLIENT_ID
 spotify_client_secret = auth.SPOTIFY_CLIENT_SECRET
 spotify_redirect_uri = auth.SPOTIFY_REDIRECT
+port = 3000
 
 
 class Track:
@@ -72,8 +73,6 @@ class Track:
 
 @app.errorhandler(404)
 def page_not_found(e):
-    for key in list(session.keys()):
-        session.pop(key)
     return render_template('error.html', id='404')
 
 
@@ -86,11 +85,7 @@ def error():
 @app.route('/')
 def login_check():
     print("login_check")
-    if not session.get('google_access_token') or not session.get('spotify_access_token'):
-        print("in bool")
-        return render_template('login.html')
-    print("outside bool")
-    return redirect('index')
+    return render_template('login.html')
 
 
 @app.route('/begin-login')
@@ -198,12 +193,14 @@ def callback():
 @app.route('/index')
 def index():
     spotify_access_token = session.get('spotify_access_token')
+    print(spotify_access_token)
     if spotify_access_token is None:
         return redirect('login')
     user_name = session.get('user_name')
     playlists = requests.get('https://api.spotify.com/v1/me/playlists?limit=20&',
                              headers={'Authorization': 'Bearer ' + spotify_access_token}).json()
     if playlists.get('error'):
+        print('error redirect')
         return redirect('error?id=playlists')
     print(len(playlists['items']))
     return render_template('index.html',
@@ -213,12 +210,18 @@ def index():
 @app.route('/additional-playlists')
 def additional_playlists():
     spotify_access_token = session.get('spotify_access_token')
+    print(spotify_access_token)
     page = request.args.get('page')
     if page is None:
+        print('page is none')
+    if spotify_access_token is None:
+        print('no spotify_access_token', page)
         return redirect('error?id=playlists')
     playlists = requests.get('https://api.spotify.com/v1/me/playlists?limit=20&offset=' + str(int(page)*20),
                              headers={'Authorization': 'Bearer ' + spotify_access_token}).json()
+    # print(playlists)
     if playlists.get('error'):
+        print('additional-playlists fetch error')
         return redirect('error?id=playlists')
     return jsonify([
         page,
@@ -541,4 +544,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=3000)
+    app.run(debug=True, port=port)
